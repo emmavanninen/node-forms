@@ -131,14 +131,7 @@ app.get('/show-me-my-page', (req, res) => {
 
 
 app.get('/send-email', (req, res) => {
-
-    // if (req.session.user) {
-    //     console.log('poop');
-    //     res.render('send-email', { error_msg: true, errors: errors });
-    // } else {
-
     res.render('send-email', { user: null, error_msg: true, errors: false } );
-// }
 });
 
 app.post('/send-email', (req, res) => {
