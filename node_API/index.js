@@ -32,6 +32,7 @@ app.use(express.json());
 app.use(cookieParse('super-secret'));
 
 let user = {};
+let message = {};
 
 app.use(
   session({
@@ -120,7 +121,7 @@ app.post('/users/register', (req, res) => {
 });
 
 app.get('/show-me-my-page', (req, res) => {
-  // res.send('You got pooped')
+
   if (req.session.user) {
     res.render('index', { user: req.sessions.user });
   } else {
@@ -130,12 +131,74 @@ app.get('/show-me-my-page', (req, res) => {
 
 
 app.get('/send-email', (req, res) => {
-    // res.send('You got pooped')
-    if (req.session.user) {
-        res.render('send-email', { user: req.sessions.user });
+
+    // if (req.session.user) {
+    //     console.log('poop');
+    //     res.render('send-email', { error_msg: true, errors: errors });
+    // } else {
+
+    res.render('send-email', { user: null, error_msg: true, errors: false } );
+// }
+});
+
+app.post('/send-email', (req, res) => {
+    req
+        .checkBody('fullname', 'Enter your full name')
+        .notEmpty()
+        .blacklist(/\d<>\//);
+    req.checkBody('sender-email', 'Enter valid email address').isEmail();
+    req
+        .checkBody('subject', 'Please, add subject')
+        .notEmpty()
+    req
+        .checkBody('msg', 'Please, add message')
+        .notEmpty()
+
+    let errors = req.validationErrors();
+    if (errors) {
+        console.log(errors);
+        res.render('send-email', { error_msg: true, errors: errors });
+
     } else {
-        res.render('send-email', { user: null });
+        message.email = req.body.email;
+        message.subject = req.body.subject;
+        message.msg = req.body.msg;
+
+        const Secret = require('../../../lectures/secret')
+        const secret = new Secret()
+        const pass = secret.getPass()
+
+
+        const nodemailer = require('nodemailer')
+
+        let transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'emma.vanninen@codeimmersives.com',
+                pass: pass,
+            }
+        })
+
+
+        let mailOptions = {
+            from: message.email,
+            to: 'emma.vanninen@codeimmersives.com',
+            subject: message.subject,
+            text: message.msg
+        }
+
+        transporter.sendMail(mailOptions, (err, info) => {
+            if (err) console.log(err);
+            else console.log(`Email sent: ${info.response}`);
+
+        })
+
+        res.redirect('/msg-sent');
     }
+});
+
+app.get('/msg-sent', (req, res) => {
+    res.render('msg-sent');
 });
 
 
@@ -148,6 +211,6 @@ app.get('*', (req, res) => {
   res.send('got req to *');
 });
 
-app.listen(8000, () => {
-  console.log('Server is running on port 8000');
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
 });
