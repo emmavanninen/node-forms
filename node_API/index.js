@@ -13,6 +13,8 @@ const logger = require('morgan');
 const session = require('express-session');
 const cookieParse = require('cookie-parser');
 const expressValidator = require('express-validator');
+const authChecker = require('./utils/authChecker')
+const isLoggedIn = require('./utils/isLoggedIn')
 
 let app = express();
 
@@ -92,29 +94,17 @@ app.get('/users/register', (req, res) => {
   res.render('register', { error_msg: false });
 });
 
-app.post('/users/register', (req, res) => {
-  req
-    .checkBody('username', 'Between 3 and 15 chars')
-    .isLength({ min: 3, max: 15 });
-  req
-    .checkBody('username', 'Only use A-Z')
-    .notEmpty()
-    .blacklist(/<>\//);
-  req.checkBody('email', 'Enter valid email address').isEmail();
-  req
-    .checkBody('password2', 'Password is not matching')
-    .notEmpty()
-    .equals(req.body.password);
+app.post('/users/register', authChecker, (req, res) => {
+    let errors = req.validationErrors();
 
-  let errors = req.validationErrors();
   if (errors) {
     res.render('register', { error_msg: true, errors: errors });
   } else {
-    user.email = req.body.email;
-    user.username = req.body.username;
-    user.password = req.body.password;
-
-    req.session.user = user;
+      user.email = req.body.email
+      user.username = req.body.username
+      user.password = req.body.password
+      
+      req.session.user = user
 
     res.redirect('/show-me-my-page');
   }
@@ -123,7 +113,7 @@ app.post('/users/register', (req, res) => {
 app.get('/show-me-my-page', (req, res) => {
 
   if (req.session.user) {
-    res.render('index', { user: req.sessions.user });
+    res.render('index', { user: req.session.user });
   } else {
     res.render('index', { user: null });
   }
@@ -194,6 +184,16 @@ app.get('/msg-sent', (req, res) => {
     res.render('msg-sent');
 });
 
+app.get('/login', isLoggedIn, (req, res) => {
+    res.render('login', { success_msg: false, error_msg: false})
+
+});
+
+app.post('/login', (req, res) => {
+    session.user.email = req.body.email
+    console.log('poop');
+    
+});
 
 app.get('/test', (req, res) => {
   res.render('index');
